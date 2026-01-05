@@ -46,7 +46,7 @@ class NotesService {
     return result.rows.map(mapDBToModel)[0];
   }
 
-  async editNoteByIdl(id, { title, tags, body }) {
+  async editNoteById(id, { title, tags, body }) {
     const updatedAt = new Date().toISOString();
     const query = {
       text: "UPDATE notes SET title = $1, body = $2, tags = $3, updated_at = $4 WHERE id = $5 RETURNING id",
