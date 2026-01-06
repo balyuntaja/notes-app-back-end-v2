@@ -12,25 +12,32 @@ class NotesHandler {
 
   async postNoteHandler(request, h) {
     this._validator.validateNotePayload(request.payload);
+
     const { title = 'untitled', body, tags } = request.payload;
     const { id: owner } = request.auth.credentials;
 
-    const noteId = await this._service.addNote({ title, body, tags, owner: credentialId });
-
-    const response = h.response({
-      status: 'success',
-      message: 'Catatan berhasil ditambahkan',
-      data: {
-        noteId,
-      },
+    const noteId = await this._service.addNote({
+      title,
+      body,
+      tags,
+      owner,
     });
-    response.code(201);
-    return response;
+
+    return h
+      .response({
+        status: 'success',
+        message: 'Catatan berhasil ditambahkan',
+        data: {
+          noteId,
+        },
+      })
+      .code(201);
   }
 
   async getNotesHandler(request) {
     const { id: owner } = request.auth.credentials;
-    const notes = await this._service.getNotes(credentialId);
+    const notes = await this._service.getNotes(owner);
+
     return {
       status: 'success',
       data: {
@@ -39,12 +46,13 @@ class NotesHandler {
     };
   }
 
-  async getNoteByIdHandler(request, h) {
+  async getNoteByIdHandler(request) {
     const { id } = request.params;
     const { id: owner } = request.auth.credentials;
 
-    await this._service.verifyNoteOwner(id, credentialId);
+    await this._service.verifyNoteAccess(id, owner);
     const note = await this._service.getNoteById(id);
+
     return {
       status: 'success',
       data: {
@@ -53,13 +61,14 @@ class NotesHandler {
     };
   }
 
-  async putNoteByIdHandler(request, h) {
+  async putNoteByIdHandler(request) {
     this._validator.validateNotePayload(request.payload);
-    const { id: owner } = request.auth.credentials;
-    const { id } = request.params;
 
-    await this._service.verifyNoteOwner(id, credentialId);
-    this._service.editNoteById(id, request.payload);
+    const { id } = request.params;
+    const { id: owner } = request.auth.credentials;
+
+    await this._service.verifyNoteAccess(id, owner);
+    await this._service.editNoteById(id, request.payload);
 
     return {
       status: 'success',
@@ -67,11 +76,12 @@ class NotesHandler {
     };
   }
 
-  async deleteNoteByIdHandler(request, h) {
+  async deleteNoteByIdHandler(request) {
     const { id } = request.params;
     const { id: owner } = request.auth.credentials;
-    await this._service.verifyNoteOwner(id, credentialId);
-    this._service.deleteNoteById(id);
+
+    await this._service.verifyNoteOwner(id, owner);
+    await this._service.deleteNoteById(id);
 
     return {
       status: 'success',
